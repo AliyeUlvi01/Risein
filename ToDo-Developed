@@ -1,0 +1,109 @@
+import Map "mo:base/HashMap";
+import Hash "mo:base/Hash";
+import Nat "mo:base/Nat";
+import Iter "mo:base/Iter";
+import Text "mo:base/Text";
+import Bool "mo:base/Bool";
+
+// Define the actor
+actor Assistant {
+
+  type ToDo = {
+    id: Nat;
+    description: Text;
+    completed: Bool;
+    priority: Nat;
+    deadline: Text;
+  };
+
+  func natHash(n : Nat) : Hash.Hash { 
+    Text.hash(Nat.toText(n))
+  };
+
+  var todos = Map.HashMap<Nat, ToDo>(0, Nat.equal, natHash);
+  var nextId : Nat = 1;
+
+  public query func getTodos() : async [ToDo] {
+    Iter.toArray(todos.vals());
+  };
+
+  // Returns the ID that was given to the ToDo item
+  public func addTodo(description : Text, priority: Nat) : async Nat {
+    let id = nextId;
+    let pr = priority;
+    todos.put(id, { id = id; description = description; completed = false; priority = pr; deadline=""});
+    nextId += 1;
+    id
+  };
+
+  public func addDeadline(taskNumber: Nat, date_time: Text) : async Text {
+    let plus : Text = date_time;
+    for (todo : ToDo in todos.vals()) {
+      if (todo.id == taskNumber){
+        // todo.deadline = date_time;  "=" ŞU SEMBOLÜ NASIL HATA VERİYOR ANLAMADIM 
+      }
+      
+    };
+    
+    return "";
+  };
+
+  public func completeTodo(id : Nat) : async () {
+    ignore do ? {
+      let description = todos.get(id)!.description;
+      todos.put(id, { id; description; completed = true; priority = 1; deadline = ""});
+    }
+  };
+
+  public query func showTodos() : async Text {
+    var output : Text = "\n___TO-DOs___";
+    output #= "\nPrior Tasks:";
+    
+    for (todo : ToDo in todos.vals()) {
+      if (todo.priority == 1 and todo.completed == false) { 
+        output #= "\n(-)"; 
+        output #= "" # todo.description;
+       };
+    };
+
+    output #= "\n___________";
+
+    for (todo : ToDo in todos.vals()) {
+        // let pr : Text = " "(todo.priority);
+      if (todo.priority == 1 and todo.completed) { 
+        output #= "\n(+)"; 
+        output #= "" # todo.description;        
+       };
+    };
+
+    output #= "\nNon-Prior Tasks:";
+
+  
+
+    for (todo : ToDo in todos.vals()) {
+      if (todo.priority == 0 and todo.completed == false) { 
+        output #= "\n(-)"; 
+        output #= "" # todo.description;
+       };
+    };
+
+    output #= "\n___________AT";
+
+    for (todo : ToDo in todos.vals()) {
+      if (todo.priority == 0 and todo.completed) { 
+        output #= "\n(+)"; 
+        output #= "" # todo.description;        
+       };
+    };
+
+
+
+    output # "\n"
+
+  };
+
+  public func clearCompleted() : async () {
+    todos := Map.mapFilter<Nat, ToDo, ToDo>(todos, Nat.equal, natHash, 
+              func(_, todo) { if (todo.completed) null else ?todo });
+  };
+}
